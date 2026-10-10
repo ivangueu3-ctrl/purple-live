@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ host.username }} — PurpleLive</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="app-container">
+        <header class="top-bar">
+            <a href="/dashboard" class="back-link">← Back</a>
+            <h1 class="app-name">💜 PurpleLive</h1>
+        </header>
+        <div class="profile-card">
+            <div class="avatar-placeholder">👤</div>
+            <h2>{{ host.username }} {% if host.is_verified %}✅{% endif %}</h2>
+            <p class="host-id">{{ host.host_id }}</p>
+            <p>Keeps {{ host.call_rates.host_percent }}% earnings</p>
+            <a href="/profile/{{ host.username }}" class="primary-btn" style="text-decoration:none;display:inline-block;margin-top:15px;">View & Chat →</a>
+        </div>
+    </div>
+</body>
+</html>

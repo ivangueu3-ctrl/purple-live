@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ host.username }} — PurpleLive</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body oncontextmenu="blockRecording();">
+    <div class="app-container">
+        <header class="top-bar">
+            <a href="/dashboard" class="back-link">← Back</a>
+            <h1 class="app-name">💜 PurpleLive</h1>
+            <div class="coin-display">💰 Coins: <span id="coin-count">{{ viewer.coins }}</span></div>
+        </header>
+
+        <div class="profile-card">
+            <div class="profile-header">
+                <div class="avatar-placeholder">👤</div>
+                <h2>{{ host.username }} {% if host.is_verified %}✅{% endif %}</h2>
+                <p class="host-id">{{ host.host_id }}</p>
+                <p class="earnings-info">{{ call_rates.host_percent }}% to Host</p>
+            </div>
+
+            <div class="call-info-box">
+                <h3>📞 Private Call Rates</h3>
+                <p>First minute: <strong>{{ call_rates.first_min }} coins</strong></p>
+                <p>Each extra min: <strong>{{ call_rates.per_min }} coins</strong></p>
+            </div>
+
+            <div class="chat-box private-chat">
+                <h4>💬 Private Chat</h4>
+                <div id="private-messages" class="messages-area"></div>
+                <div class="chat-input-row">
+                    <input type="text" id="private-input" placeholder="Private message..." class="chat-input" onkeypress="if(event.key==='Enter')sendPrivateMsg()">
+                    <button onclick="sendPrivateMsg()" class="send-btn">➤</button>
+                </div>
+            </div>
+
+            <button id="call-host-btn" class="call-host-btn">📞 Request Private Call</button>
+            <p id="call-status-msg" class="status-msg"></p>
+        </div>
+    </div>
+
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+<script>
+const targetHostId = "{{ host.host_id }}";
+const targetHostName = "{{ host.username }}";
+</script>
+</body>
+</html>

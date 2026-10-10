@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin — PurpleLive</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="app-container">
+        <header class="top-bar">
+            <a href="/dashboard" class="back-link">← Dashboard</a>
+            <h1 class="app-name">⚙️ Admin Panel</h1>
+            <span style="font-size:0.85rem;">Admin: {{ admin_email }}</span>
+        </header>
+
+        <h2>🎤 Host Applications</h2>
+        <div style="background:rgba(0,0,0,0.25);border-radius:12px;padding:15px;margin-bottom:20px;">
+            {% for req in requests %}
+            <div style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.1);">
+                <strong>{{ req.username }}</strong> — {{ req.time }} —
+                {% if req.status == 'pending' %}
+                <a href="/approve-host/{{ req.username }}" style="color:#32CD32;margin:0 8px;">✅ Approve & Verify</a>
+                <a href="/reject-host/{{ req.username }}" style="color:#FF6B6B;">❌ Reject</a>
+                {% else %}
+                <span style="color:{% if req.status=='approved' %}#32CD32{% else %}#FF6B6B{% endif %};">{{ req.status|upper }}</span>
+                {% endif %}
+            </div>
+            {% else %}<p>No pending applications</p>{% endfor %}
+        </div>
+
+        <h2>📞 Call Logs & Records</h2>
+        <a href="/call_logs" class="primary-btn" style="display:inline-block;text-decoration:none;text-align:center;margin-bottom:15px;">View All Call Records →</a>
+
+        <h2>👥 All Users</h2>
+        <div style="background:rgba(0,0,0,0.25);border-radius:12px;padding:15px;">
+            {% for name,u in users.items() %}
+            <div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.1);font-size:0.9rem;">
+                <strong>{{ name }}</strong> — {{ u.email }} — Coins: {{ u.coins }}
+                {% if u.is_host %}<br>⭐ {{ u.host_id }} — Balance: £{{ "%.2f"|format(u.host_balance/100) }}{% endif %}
+                {% if u.is_admin %}<strong>👑 ADMIN</strong>{% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</body>
+</html>
