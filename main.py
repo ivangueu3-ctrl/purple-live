@@ -95,8 +95,8 @@ def signup():
         u = request.form['username'].strip()
         p = request.form['password']
         email = request.form.get('email','').strip()
-        if len(u) < 2: return render_template('Signup.html', error="Username too short!")
-        if u in users: return render_template('Signup.html', error="Username taken!")
+        if len(u) < 2: return render_template('signup.html', error="Username too short!")
+        if u in users: return render_template('signup.html', error="Username taken!")
         is_admin = (email == ADMIN_EMAIL)
         users[u] = {
             "username":u,"email":email,"password":p,"coins":1000,
