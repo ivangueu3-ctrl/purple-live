@@ -108,7 +108,7 @@ def signup():
         }
         session['user'] = u
         return redirect(url_for('dashboard'))
-    return render_template('Signup.html')
+    return render_template('signup.html')
 
 @app.route('/login', methods=['POST'])
 def login():
