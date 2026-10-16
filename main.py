@@ -135,7 +135,14 @@ def logout():
 def dashboard():
     if 'user' not in session:
         return redirect(url_for('home'))
+    
     username = session['user']
+    
+    # Safety check: if user doesn't exist anymore, log them out
+    if username not in users:
+        session.pop('user', None)
+        return redirect(url_for('home'))
+    
     current_user = users[username]
     msg = request.args.get('msg', '')
     return render_template('dashboard.html',
@@ -190,12 +197,12 @@ def apply_host():
         return redirect(url_for('home'))
     u = session['user']
     if users[u]['is_host']:
-        return redirect(url_for('dashboard'), msg='already_host')
+        return redirect(url_for('dashboard', msg='already_host'))
     if users[u]['host_request_pending']:
-        return redirect(url_for('dashboard'), msg='pending')
+        return redirect(url_for('dashboard', msg='pending'))
     users[u]['host_request_pending'] = True
     host_requests.append({"username":u,"time":datetime.now().strftime("%Y-%m-%d %H:%M"),"photo_verified":False})
-    return redirect(url_for('dashboard'), msg='applied')
+    return redirect(url_for('dashboard', msg='applied'))
 
 @app.route('/approve-host/<name>')
 def approve_host(name):
@@ -239,7 +246,7 @@ def search_host():
             break
     if found:
         return redirect(url_for('public_profile', username=found['username']))
-    return redirect(url_for('dashboard'), msg='host_not_found')
+    return redirect(url_for('dashboard', msg='host_not_found'))
 
 @app.route('/profile/<username>')
 def profile(username):
@@ -390,8 +397,7 @@ def decline_private_call():
     if call_id not in active_calls:
         return jsonify({"success":False})
     call = active_calls[call_id]
-    if call['host'] in busy_hosts:
-        busy_hosts.remove(call['host'])
+    busy_hosts.discard(call['host'])
     del active_calls[call_id]
     return jsonify({"success":True})
 
