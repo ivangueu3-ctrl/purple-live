@@ -19,6 +19,16 @@
             </div>
         </header>
 
+        {% if request.args.get('msg') == 'applied' %}
+        <div class="alert alert-success">✅ Your host application has been submitted!</div>
+        {% elif request.args.get('msg') == 'already_host' %}
+        <div class="alert alert-info">ℹ️ You are already a host!</div>
+        {% elif request.args.get('msg') == 'pending' %}
+        <div class="alert alert-warning">⏳ Your application is pending review</div>
+        {% elif request.args.get('msg') == 'coins_bought' %}
+        <div class="alert alert-success">💰 Coins added successfully!</div>
+        {% endif %}
+
         <div class="dashboard-grid">
             <!-- Coins Balance -->
             <div class="card card-coins">
@@ -44,25 +54,63 @@
                     <p id="liveStatus">Camera preview ready ✅</p>
                 </div>
 
+                <!-- Daily Tasks -->
+                <div class="tasks-section">
+                    <h4>📋 Daily Tasks</h4>
+                    <div class="task-item">
+                        <span>Daily Login (+10 Coins)</span>
+                        {% if not current_user.daily_tasks.login_claimed %}
+                        <button class="btn-small" onclick="claimTask('login')">Claim</button>
+                        {% else %}
+                        <span class="claimed">✅ Claimed</span>
+                        {% endif %}
+                    </div>
+                    {% if current_user.is_host %}
+                    <div class="task-item">
+                        <span>Send 3 Gifts (+20 Coins)</span>
+                        {% if current_user.daily_tasks.gifts_sent >= 3 and not current_user.daily_tasks.gifts_claimed %}
+                        <button class="btn-small" onclick="claimTask('gifts')">Claim</button>
+                        {% elif current_user.daily_tasks.gifts_claimed %}
+                        <span class="claimed">✅ Claimed</span>
+                        {% else %}
+                        <span class="pending">{{ current_user.daily_tasks.gifts_sent }}/3</span>
+                        {% endif %}
+                    </div>
+                    <div class="task-item">
+                        <span>Watch 10 Minutes (+15 Coins)</span>
+                        {% if current_user.daily_tasks.watch_minutes >= 10 and not current_user.daily_tasks.watch_claimed %}
+                        <button class="btn-small" onclick="claimTask('watch')">Claim</button>
+                        {% elif current_user.daily_tasks.watch_claimed %}
+                        <span class="claimed">✅ Claimed</span>
+                        {% else %}
+                        <span class="pending">{{ current_user.daily_tasks.watch_minutes }}/10 min</span>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+
                 <div class="host-links">
                     <a href="{{ url_for('profile', username=current_user.username) }}" class="btn-secondary">Edit Profile</a>
                     <a href="{{ url_for('call_logs') }}" class="btn-secondary">Call Logs</a>
+                    {% if current_user.is_host %}
+                    <a href="{{ url_for('search_host') }}" class="btn-secondary">🔍 Search Host by ID</a>
+                    {% endif %}
                 </div>
             </div>
 
-            {% elif not current_user.host_request_pending %}
+            {% elif current_user.host_request_pending %}
+            <div class="card card-pending">
+                <h3>Application Pending</h3>
+                <p>Your host request is being reviewed. We'll notify you when approved!</p>
+            </div>
+
+            {% else %}
             <div class="card card-apply">
                 <h3>Become a Host</h3>
                 <p>Start your own live stream and earn coins!</p>
                 <form action="{{ url_for('apply_host') }}" method="POST">
                     <button type="submit" class="btn-primary">Apply Now</button>
                 </form>
-            </div>
-
-            {% else %}
-            <div class="card card-pending">
-                <h3>Application Pending</h3>
-                <p>Your host request is being reviewed. We'll email you when approved!</p>
             </div>
             {% endif %}
 
@@ -73,7 +121,7 @@
                     <li><a href="{{ url_for('home') }}">🏠 Home / Live Streams</a></li>
                     <li><a href="{{ url_for('leaderboard') }}">🏆 Leaderboard</a></li>
                     <li><a href="{{ url_for('notifications') }}">🔔 Notifications</a></li>
-                    {% if current_user and current_user.get('is_admin') %}
+                    {% if current_user and current_user.is_admin %}
                     <li><a href="{{ url_for('admin') }}">⚙️ Admin Panel</a></li>
                     {% endif %}
                 </ul>
@@ -117,6 +165,21 @@
                 liveStatus.style.color = '#888888';
             }
         });
+
+        function claimTask(taskId) {
+            fetch('/claim-task', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({task_id: taskId})
+            }).then(res => res.json())
+              .then(data => {
+                  if (data.success) {
+                      location.reload();
+                  } else {
+                      alert(data.error || 'Could not claim task');
+                  }
+              });
+        }
     </script>
 </body>
 </html>
