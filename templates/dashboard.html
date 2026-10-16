@@ -3,174 +3,114 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PurpleLive — Stream & Connect</title>
+    <title>PurpleLive — Dashboard</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-<body oncontextmenu="return true;">
-    <div class="app-container">
-        <header class="top-bar">
-            <h1 class="app-name">💜 PurpleLive</h1>
-            <div class="coin-display">💰 Coins: <span id="coin-count">{{ user.coins }}</span></div>
-            <div class="user-menu">
-                <span>Welcome, {{ user.username }}</span>
-                {% if user.is_host %}<span class="host-badge">⭐ Host</span>{% endif %}
-                {% if user.is_verified %}<span class="verified-badge">✅ Verified</span>{% endif %}
-                {% if user.is_admin %}<a href="/admin" class="admin-link">⚙️ Admin</a>{% endif %}
-                <a href="/notifications" class="admin-link">🔔</a>
-                <a href="/leaderboard" class="admin-link">🏆</a>
-                <a href="/logout" class="logout-btn">🚪</a>
+<body>
+    <div class="container">
+        <header class="dashboard-header">
+            <h1>💜 PurpleLive Dashboard</h1>
+            <div class="user-info">
+                <span>Welcome, {{ current_user.username }}!</span>
+                {% if current_user.is_host %}
+                    <span class="host-badge">Host ID: {{ current_user.host_id or 'Pending' }}</span>
+                {% endif %}
+                <a href="{{ url_for('logout') }}" class="btn-logout">Logout</a>
             </div>
         </header>
 
-        {% if msg %}
-        <div class="message-box">
-            {% if msg == 'coins_bought' %}✅ Coins added!{% endif %}
-            {% if msg == 'applied' %}✅ Host application submitted — waiting verification!{% endif %}
-            {% if msg == 'min_withdraw' %}⚠️ Minimum withdrawal £{{ call_rates.min_withdraw_gbp }}{% endif %}
-            {% if msg == 'withdraw_submitted' %}✅ Withdrawal request sent!{% endif %}
-        </div>
-        {% endif %}
-
-        <div class="main-grid">
-            <div class="stream-section">
-                <div class="stream-placeholder">
-                    <p>📹 Live Stream</p>
-                    <p class="stream-note">Screen recording is disabled during private calls</p>
-                </div>
-                <div class="chat-box public-chat">
-                    <h4>💬 Public Chat</h4>
-                    <div id="public-messages" class="messages-area">
-                        {% for m in public_chat %}
-                        <div class="chat-msg"><strong>{{ m.sender }}:</strong> {{ m.message }}</div>
-                        {% endfor %}
-                    </div>
-                    <div class="chat-input-row">
-                        <input type="text" id="public-input" placeholder="Message..." class="chat-input" onkeypress="if(event.key==='Enter')sendPublicChat()">
-                        <button onclick="sendPublicChat()" class="send-btn">➤</button>
-                    </div>
-                </div>
+        <div class="dashboard-grid">
+            <!-- Coins Balance -->
+            <div class="card coins-card">
+                <h3>💰 Your Coins</h3>
+                <div class="coin-balance">{{ current_user.coins or 0 }}</div>
+                <a href="{{ url_for('buy_coins') }}" class="btn-primary">Buy Coins</a>
             </div>
 
-            <div class="sidebar">
-                {% if user.is_host %}
-                <div class="card tasks-card">
-                    <h3>📋 Daily Tasks — Host Only</h3>
-                    <div class="task-row">
-                        <span>✅ Login Bonus (+10)</span>
-                        {% if user.daily_tasks.login_claimed %}<span class="claimed">✓</span>
-                        {% else %}<button onclick="claimTask('login')" class="claim-btn">Claim</button>{% endif %}
-                    </div>
-                    <div class="task-row">
-                        <span>Send 3 Gifts (+20)</span>
-                        {% if user.daily_tasks.gifts_claimed %}<span class="claimed">✓</span>
-                        {% else %}<span class="task-progress">{{ user.daily_tasks.gifts_sent }}/3</span>
-                        <button onclick="claimTask('gifts')" class="claim-btn" {% if user.daily_tasks.gifts_sent<3 %}disabled{% endif %}>Claim</button>{% endif %}
-                    </div>
-                    <div class="task-row">
-                        <span>Watch 10 Min (+15)</span>
-                        {% if user.daily_tasks.watch_claimed %}<span class="claimed">✓</span>
-                        {% else %}<span class="task-progress">{{ user.daily_tasks.watch_minutes }}/10</span>
-                        <button onclick="claimTask('watch10')" class="claim-btn" {% if user.daily_tasks.watch_minutes<10 %}disabled{% endif %}>Claim</button>{% endif %}
-                    </div>
-                    <div class="task-row">
-                        <span>Join PK Battle (+{{ pk_config.win_bonus_coins }})</span>
-                        {% if user.daily_tasks.pk_claimed %}<span class="claimed">✓</span>
-                        {% else %}<button onclick="startPK()" class="claim-btn">Start PK</button>
-                        <button onclick="claimTask('pk')" class="claim-btn" {% if not user.daily_tasks.pk_joined %}disabled{% endif %}>Claim</button>{% endif %}
-                    </div>
-                </div>
-                {% else %}
-                <div class="card">
-                    <h3>📋 Tasks</h3>
-                    <p>Only verified hosts can earn from daily tasks</p>
-                </div>
-                {% endif %}
-
-                <div class="card search-card">
-                    <h3>🔍 Find Host</h3>
-                    <form action="/search-host" method="GET">
-                        <input type="text" name="host_id" placeholder="HP-1001" required class="form-input">
-                        <button type="submit" class="primary-btn">Visit Profile</button>
-                    </form>
+            <!-- Host Section -->
+            {% if current_user.is_host %}
+            <div class="card host-card">
+                <h3>🎤 Host Studio</h3>
+                <p>Your Host ID: <strong>{{ current_user.host_id }}</strong></p>
+                
+                <!-- Live Stream Section -->
+                <div class="live-section">
+                    <video id="liveVideo" autoplay muted playsinline style="display:none; width:100%; border-radius:10px; background:#000;"></video>
+                    <button id="goLiveBtn" class="btn-live">🔴 Go Live</button>
+                    <button id="endLiveBtn" class="btn-end" style="display:none;">⏹️ End Live</button>
+                    <p id="liveStatus" style="margin-top:10px; color:#888;">Camera preview ready</p>
                 </div>
 
-                {% if not user.is_host and not user.host_request_pending %}
-                <div class="card host-apply-card">
-                    <h3>🎤 Become a Host</h3>
-                    <p>Earn {{ call_rates.host_percent }}% from calls & gifts!</p>
-                    <p class="small-note">Photo verification required</p>
-                    <form action="/apply-host" method="POST">
-                        <button type="submit" class="primary-btn">Apply Now</button>
-                    </form>
-                </div>
-                {% endif %}
-
-                {% if user.is_host %}
-                <div class="card balance-card">
-                    <h3>💰 Host Earnings</h3>
-                    <p>ID: <strong>{{ user.host_id }}</strong></p>
-                    <p>Balance: <strong>£{{ "%.2f"|format(user.host_balance/100) }}</strong></p>
-                    <p>You: {{ call_rates.host_percent }}% | Platform: {{ call_rates.platform_percent }}%</p>
-                    <p>Min withdraw: £{{ call_rates.min_withdraw_gbp }}</p>
-                    <form action="/withdraw" method="POST">
-                        <input type="number" name="amount" step="0.01" min="{{ call_rates.min_withdraw_gbp }}" placeholder="Amount £" required class="form-input">
-                        <button type="submit" class="withdraw-btn">💵 Cash Out</button>
-                    </form>
-                    <h4 style="margin-top:15px;">📞 Call Rate</h4>
-                    <p>First min: {{ call_rates.first_min }} coins</p>
-                    <p>Per min: <span id="rate-display">{{ call_rates.per_min }}</span> coins</p>
-                    <input type="range" id="rate-slider" min="100" max="2000" step="100" value="{{ call_rates.per_min }}" oninput="updateRateDisplay(this.value)">
-                    <button onclick="saveRate()" class="primary-btn" style="margin-top:8px;">Save Rate</button>
-                </div>
-                {% endif %}
-
-                <div class="gifts-section">
-                    <h3>🎁 Send Gift</h3>
-                    <p class="small-note">Visit a host profile first to send</p>
-                    <div class="gifts-grid">
-                        {% for g in gifts %}
-                        <button class="gift-btn" onclick="alert('Visit a host profile to send this gift')" title="{{ g.name }} — {{ g.cost }} coins">
-                            <span class="gift-emoji">{{ g.emoji }}</span>
-                            <span class="gift-cost">{{ g.cost }}</span>
-                        </button>
-                        {% endfor %}
-                    </div>
-                </div>
-
-                <div class="coin-shop">
-                    <h3>🛒 Buy Coins</h3>
-                    <form action="/buy-coins" method="POST">
-                        {% for p in packs %}
-                        <button type="submit" name="pack_id" value="{{ p.id }}" class="pack-btn">
-                            <strong>{{ p.coins }} Coins</strong>
-                            {% if p.bonus>0 %}<span class="bonus">+{{ p.bonus }} FREE!</span>{% endif %}
-                            <span class="price">£{{ "%.2f"|format(p.price_gbp) }}</span>
-                        </button>
-                        {% endfor %}
-                    </form>
+                <div class="host-links">
+                    <a href="{{ url_for('profile') }}" class="btn-secondary">Edit Profile</a>
+                    <a href="{{ url_for('call_logs') }}" class="btn-secondary">Call Logs</a>
                 </div>
             </div>
-        </div>
+            {% elif not current_user.host_request_pending %}
+            <div class="card become-host-card">
+                <h3>Become a Host</h3>
+                <p>Start your own live stream and earn coins!</p>
+                <a href="{{ url_for('become_host') }}" class="btn-primary">Apply Now</a>
+            </div>
+            {% else %}
+            <div class="card pending-card">
+                <h3>⏳ Application Pending</h3>
+                <p>Your host request is being reviewed. We'll email you when approved!</p>
+            </div>
+            {% endif %}
 
-        {% if user.is_host %}
-        <div id="host-call-panel" class="hidden">
-            <div class="call-alert">
-                <p>📞 INCOMING CALL</p>
-                <p id="caller-name"></p>
-                <p class="call-fee">First min: {{ call_rates.first_min }} coins</p>
-                <div class="call-buttons">
-                    <button id="accept-btn" class="accept-btn">✅ Accept</button>
-                    <button id="decline-btn" class="decline-btn">❌ Decline</button>
-                </div>
+            <!-- Quick Navigation -->
+            <div class="card nav-card">
+                <h3>Quick Links</h3>
+                <ul>
+                    <li><a href="{{ url_for('index') }}">🏠 Home / Live Streams</a></li>
+                    <li><a href="{{ url_for('leaderboard') }}">🏆 Leaderboard</a></li>
+                    <li><a href="{{ url_for('notifications') }}">🔔 Notifications</a></li>
+                    {% if current_user.is_admin %}
+                    <li><a href="{{ url_for('admin') }}">⚙️ Admin Panel</a></li>
+                    {% endif %}
+                </ul>
             </div>
         </div>
-        {% endif %}
     </div>
 
-<script src="{{ url_for('static', filename='script.js') }}"></script>
-<script>
-const isHost = {{ user.is_host|lower }};
-const CALL_RATES = {{ call_rates|tojson }};
-</script>
+    <script>
+        // Camera / Go Live functionality
+        const goLiveBtn = document.getElementById('goLiveBtn');
+        const endLiveBtn = document.getElementById('endLiveBtn');
+        const liveVideo = document.getElementById('liveVideo');
+        const liveStatus = document.getElementById('liveStatus');
+        let mediaStream = null;
+
+        goLiveBtn.addEventListener('click', async () => {
+            try {
+                mediaStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: true, 
+                    audio: true 
+                });
+                liveVideo.srcObject = mediaStream;
+                liveVideo.style.display = 'block';
+                goLiveBtn.style.display = 'none';
+                endLiveBtn.style.display = 'inline-block';
+                liveStatus.textContent = '🔴 You are LIVE! (Preview Mode)';
+                liveStatus.style.color = '#e91e63';
+            } catch (err) {
+                alert('Could not access camera. Please allow camera permissions.');
+                console.error(err);
+            }
+        });
+
+        endLiveBtn.addEventListener('click', () => {
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(track => track.stop());
+                mediaStream = null;
+            }
+            liveVideo.style.display = 'none';
+            goLiveBtn.style.display = 'inline-block';
+            endLiveBtn.style.display = 'none';
+            liveStatus.textContent = 'Camera preview ready';
+            liveStatus.style.color = '#888';
+        });
+    </script>
 </body>
 </html>
