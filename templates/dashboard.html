@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PurpleLive — Dashboard</title>
+    <title>PurpleLive - Dashboard</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
@@ -11,9 +11,9 @@
         <header class="dashboard-header">
             <h1>💜 PurpleLive Dashboard</h1>
             <div class="user-info">
-                <span>Welcome, {{ current_user.username }}!</span>
+                <span>Welcome, <strong>{{ current_user.username }}</strong>!</span>
                 {% if current_user.is_host %}
-                    <span class="host-badge">Host ID: {{ current_user.host_id or 'Pending' }}</span>
+                    <span class="host-badge">👑 Host — ID: <strong>{{ current_user.host_id or 'Pending' }}</strong></span>
                 {% endif %}
                 <a href="{{ url_for('logout') }}" class="btn-logout">Logout</a>
             </div>
@@ -21,52 +21,59 @@
 
         <div class="dashboard-grid">
             <!-- Coins Balance -->
-            <div class="card coins-card">
+            <div class="card card-coins">
                 <h3>💰 Your Coins</h3>
-                <div class="coin-balance">{{ current_user.coins or 0 }}</div>
+                <div class="coins-display">{{ current_user.coins or 0 }}</div>
                 <a href="{{ url_for('buy_coins') }}" class="btn-primary">Buy Coins</a>
             </div>
 
             <!-- Host Section -->
             {% if current_user.is_host %}
-            <div class="card host-card">
-                <h3>🎤 Host Studio</h3>
+            <div class="card card-host">
+                <h3>👑 Host Center</h3>
                 <p>Your Host ID: <strong>{{ current_user.host_id }}</strong></p>
+                {% if not current_user.is_verified %}
+                <p class="warning">⏳ Your profile is pending verification</p>
+                {% endif %}
                 
                 <!-- Live Stream Section -->
                 <div class="live-section">
                     <video id="liveVideo" autoplay muted playsinline style="display:none; width:100%; border-radius:10px; background:#000;"></video>
                     <button id="goLiveBtn" class="btn-live">🔴 Go Live</button>
-                    <button id="endLiveBtn" class="btn-end" style="display:none;">⏹️ End Live</button>
-                    <p id="liveStatus" style="margin-top:10px; color:#888;">Camera preview ready</p>
+                    <button id="endLiveBtn" class="btn-live" style="display:none;">⏹️ End Live</button>
+                    <p id="liveStatus">Camera preview ready ✅</p>
                 </div>
 
                 <div class="host-links">
-                    <a href="{{ url_for('profile') }}" class="btn-secondary">Edit Profile</a>
+                    <a href="{{ url_for('profile', username=current_user.username) }}" class="btn-secondary">Edit Profile</a>
                     <a href="{{ url_for('call_logs') }}" class="btn-secondary">Call Logs</a>
                 </div>
             </div>
+
             {% elif not current_user.host_request_pending %}
-            <div class="card become-host-card">
+            <div class="card card-apply">
                 <h3>Become a Host</h3>
                 <p>Start your own live stream and earn coins!</p>
-                <a href="{{ url_for('become_host') }}" class="btn-primary">Apply Now</a>
+                <form action="{{ url_for('apply_host') }}" method="POST">
+                    <button type="submit" class="btn-primary">Apply Now</button>
+                </form>
             </div>
+
             {% else %}
-            <div class="card pending-card">
-                <h3>⏳ Application Pending</h3>
+            <div class="card card-pending">
+                <h3>Application Pending</h3>
                 <p>Your host request is being reviewed. We'll email you when approved!</p>
             </div>
             {% endif %}
 
             <!-- Quick Navigation -->
-            <div class="card nav-card">
+            <div class="card card-nav">
                 <h3>Quick Links</h3>
                 <ul>
-                    <li><a href="{{ url_for('index') }}">🏠 Home / Live Streams</a></li>
+                    <li><a href="{{ url_for('home') }}">🏠 Home / Live Streams</a></li>
                     <li><a href="{{ url_for('leaderboard') }}">🏆 Leaderboard</a></li>
                     <li><a href="{{ url_for('notifications') }}">🔔 Notifications</a></li>
-                    {% if current_user.is_admin %}
+                    {% if current_user and current_user.get('is_admin') %}
                     <li><a href="{{ url_for('admin') }}">⚙️ Admin Panel</a></li>
                     {% endif %}
                 </ul>
@@ -75,7 +82,6 @@
     </div>
 
     <script>
-        // Camera / Go Live functionality
         const goLiveBtn = document.getElementById('goLiveBtn');
         const endLiveBtn = document.getElementById('endLiveBtn');
         const liveVideo = document.getElementById('liveVideo');
@@ -84,15 +90,15 @@
 
         goLiveBtn.addEventListener('click', async () => {
             try {
-                mediaStream = await navigator.mediaDevices.getUserMedia({ 
-                    video: true, 
-                    audio: true 
+                mediaStream = await navigator.mediaDevices.getUserMedia({
+                    video: true,
+                    audio: true
                 });
                 liveVideo.srcObject = mediaStream;
                 liveVideo.style.display = 'block';
                 goLiveBtn.style.display = 'none';
-                endLiveBtn.style.display = 'inline-block';
-                liveStatus.textContent = '🔴 You are LIVE! (Preview Mode)';
+                endLiveBtn.style.display = 'block';
+                liveStatus.textContent = '🔴 YOU ARE LIVE! (Preview Mode)';
                 liveStatus.style.color = '#e91e63';
             } catch (err) {
                 alert('Could not access camera. Please allow camera permissions.');
@@ -104,12 +110,12 @@
             if (mediaStream) {
                 mediaStream.getTracks().forEach(track => track.stop());
                 mediaStream = null;
+                liveVideo.style.display = 'none';
+                goLiveBtn.style.display = 'block';
+                endLiveBtn.style.display = 'none';
+                liveStatus.textContent = 'Camera preview ready ✅';
+                liveStatus.style.color = '#888888';
             }
-            liveVideo.style.display = 'none';
-            goLiveBtn.style.display = 'inline-block';
-            endLiveBtn.style.display = 'none';
-            liveStatus.textContent = 'Camera preview ready';
-            liveStatus.style.color = '#888';
         });
     </script>
 </body>
