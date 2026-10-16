@@ -4,7 +4,10 @@ import uuid
 
 app = Flask(__name__)
 app.secret_key = 'purplelive_secure_2026_final_v1'
-
+# Make current_user available on all pages
+@app.context_processor
+def inject_current_user():
+    return dict(current_user=session.get('user'))
 # ========= CONFIG — YOUR SETTINGS =========
 ADMIN_EMAIL = "ivangueu3@gmail.com"
 COIN_PACKS = [
